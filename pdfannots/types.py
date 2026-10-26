@@ -201,15 +201,18 @@ class Pos:
                     other_col = (ox - self.page.mediabox.x0) // colwidth
                     return self_col < other_col or (self_col == other_col and sy > oy)
                 else:
-                    # Default layout inferred from pdfminer traversal
-                    assert self._pageseq != 0
-                    assert other._pageseq != 0
-                    if self._pageseq == other._pageseq:
-                        # The positions are on or closest to the same line of text.
-                        # XXX: assume top-to-bottom left-to-right order
-                        return self.x < other.x if self.y == other.y else self.y > other.y
-                    else:
+                    # Default layout inferred from pdfminer traversal. Sequence
+                    # numbers stay unset (0) when a page has no text lines or
+                    # figures, such as an intentionally blank page. Compare
+                    # those positions geometrically, after any that do have a
+                    # sequence, so sorting cannot fail the whole document.
+                    if self._pageseq != other._pageseq:
+                        if self._pageseq == 0 or other._pageseq == 0:
+                            return other._pageseq == 0
                         return self._pageseq < other._pageseq
+                    # Same line of text, or no layout sequence was assigned.
+                    # XXX: assume top-to-bottom left-to-right order
+                    return self.x < other.x if self.y == other.y else self.y > other.y
             else:
                 return self.page < other.page
         else:
